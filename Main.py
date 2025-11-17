@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import random
 import os
+import asyncio  # 新增：用于sleep动画
 from discord import app_commands  # 用于describe和choices参数
 
 # 设置Bot意图
@@ -22,7 +23,7 @@ async def on_ready():
     except Exception as e:
         print(e)
 
-# Slash命令：/lucky stock:字符串（股票代码） day:选择（今天/明天，必选）
+# 原命令：/lucky stock:字符串（股票代码） day:选择（今天/明天，必选）
 @app_commands.describe(stock="输入你希望被好运祝福的代码")
 @app_commands.describe(day="选择预测日期：今天 或 明天")
 @app_commands.choices(day=[
@@ -57,6 +58,62 @@ async def lucky(interaction: discord.Interaction, stock: str, day: str):
         embed.set_image(url='https://i.imgur.com/co0MGhu.gif')  # 跌的GIF
     
     await interaction.response.send_message(embed=embed)
+
+# 新命令：/buy codes:字符串（股票代码列表）
+@app_commands.describe(codes="输入股票代码，用逗号分隔，最多12个 e.g. AAPL,TSLA,GOOG,MSFT")
+@bot.tree.command(name='buy', description='幸运大转盘：今天买什么？输入代码列表，转盘选一个推荐~')
+async def buy(interaction: discord.Interaction, codes: str):
+    # 先defer，防3s响应限（动画需时）
+    await interaction.response.defer()
+    
+    # 解析代码列表
+    codes_list = [c.strip().upper() for c in codes.split(',') if c.strip()]
+    if not codes_list:
+        await interaction.followup.send("哎呀，代码列表不能为空！试试 /buy codes:AAPL,TSLA", ephemeral=True)
+        return
+    if len(codes_list) > 12:
+        await interaction.followup.send("最多12个代码哦~ 简化列表试试！", ephemeral=True)
+        return
+    
+    # 随机选赢家
+    winner = random.choice(codes_list)
+    
+    # 构建轮盘序列：快转几圈 + 慢停到赢家
+    full_wheel = codes_list * random.randint(2, 3)  # 2-3圈
+    fast_spins = random.sample(range(len(full_wheel)), random.randint(8, 15))  # 随机快转位置
+    fast_sequence = [full_wheel[i] for i in fast_spins]
+    
+    # 慢停序列：从随机点渐近赢家
+    slow_start = random.choice(codes_list)
+    slow_sequence = [slow_start]
+    for _ in range(random.randint(3, 6)):  # 3-6步慢转
+        next_code = random.choice(codes_list)
+        slow_sequence.append(next_code)
+    slow_sequence.append(winner)  # 最终停
+    
+    # 总序列
+    spin_sequence = fast_sequence + slow_sequence
+    
+    # 初始Embed
+    embed = discord.Embed(title="今天买什么？🛍️", description="🌀 大转盘启动中... 转啊转~", color=0x3498DB)
+    await interaction.followup.send(embed=embed)
+    
+    # 动画：编辑Embed显示当前“指针”
+    for i, current in enumerate(spin_sequence):
+        # 延迟：快转0.2s，慢转渐增0.5-1s
+        if i < len(fast_sequence):
+            await asyncio.sleep(0.2)
+        else:
+            await asyncio.sleep(0.5 + (i - len(fast_sequence)) * 0.1)  # 慢到1s
+        
+        # 更新描述：显示当前代码 + 箭头效果
+        arrow = " → " if i < len(spin_sequence) - 1 else " ✅"
+        embed.description = f"🌀 转动中... 当前: {current}{arrow}"
+        await interaction.edit_original_response(embed=embed)
+    
+    # 最终停：推荐赢家
+    embed.description = f"🎉 转盘停下！今天推荐买: **{winner}** 🤑\n(纯娱乐，投资需谨慎~)"
+    await interaction.edit_original_response(embed=embed)
 
 # 运行Bot
 if __name__ == '__main__':

@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import random
 import os
-import asyncio  # 新增：用于sleep动画
+import asyncio  # 用于sleep动画
 from discord import app_commands  # 用于describe和choices参数
 
 # 设置Bot意图
@@ -59,20 +59,33 @@ async def lucky(interaction: discord.Interaction, stock: str, day: str):
     
     await interaction.response.send_message(embed=embed)
 
-# 新命令：/buy codes:字符串（股票代码列表）
-@app_commands.describe(codes="输入股票代码，用逗号分隔，最多12个 e.g. AAPL,TSLA,GOOG,MSFT")
-@bot.tree.command(name='buy', description='幸运大转盘：今天买什么？输入代码列表，转盘选一个推荐~')
-async def buy(interaction: discord.Interaction, codes: str):
+# 新命令：/buy codes1:字符串 ... codes12:字符串（每个填空可选，最多12个）
+@app_commands.describe(codes1="股票代码1 (可选)")
+@app_commands.describe(codes2="股票代码2 (可选)")
+@app_commands.describe(codes3="股票代码3 (可选)")
+@app_commands.describe(codes4="股票代码4 (可选)")
+@app_commands.describe(codes5="股票代码5 (可选)")
+@app_commands.describe(codes6="股票代码6 (可选)")
+@app_commands.describe(codes7="股票代码7 (可选)")
+@app_commands.describe(codes8="股票代码8 (可选)")
+@app_commands.describe(codes9="股票代码9 (可选)")
+@app_commands.describe(codes10="股票代码10 (可选)")
+@app_commands.describe(codes11="股票代码11 (可选)")
+@app_commands.describe(codes12="股票代码12 (可选)")
+@bot.tree.command(name='buy', description='幸运大转盘：今天买什么？填入股票代码（每个填空一个），转盘选一个推荐~')
+async def buy(interaction: discord.Interaction, codes1: str = None, codes2: str = None, codes3: str = None,
+              codes4: str = None, codes5: str = None, codes6: str = None, codes7: str = None,
+              codes8: str = None, codes9: str = None, codes10: str = None, codes11: str = None, codes12: str = None):
     # 先defer，防3s响应限（动画需时）
     await interaction.response.defer()
     
-    # 解析代码列表
-    codes_list = [c.strip().upper() for c in codes.split(',') if c.strip()]
+    # 解析代码列表（收集非空参数）
+    codes_list = [c.strip().upper() for c in [codes1, codes2, codes3, codes4, codes5, codes6, codes7, codes8, codes9, codes10, codes11, codes12] if c and c.strip()]
     if not codes_list:
-        await interaction.followup.send("哎呀，代码列表不能为空！试试 /buy codes:AAPL,TSLA", ephemeral=True)
+        await interaction.followup.send("哎呀，至少填一个股票代码！试试 /buy codes1:AAPL codes2:TSLA", ephemeral=True)
         return
     if len(codes_list) > 12:
-        await interaction.followup.send("最多12个代码哦~ 简化列表试试！", ephemeral=True)
+        await interaction.followup.send("最多12个代码哦~ 简化试试！", ephemeral=True)
         return
     
     # 随机选赢家
@@ -94,11 +107,12 @@ async def buy(interaction: discord.Interaction, codes: str):
     # 总序列
     spin_sequence = fast_sequence + slow_sequence
     
-    # 初始Embed
-    embed = discord.Embed(title="今天买什么？🛍️", description="🌀 大转盘启动中... 转啊转~", color=0x3498DB)
+    # 初始Embed（标题大字）
+    embed = discord.Embed(title="🎰 **今天买什么？** 🛍️", description="🌀 **大转盘启动中... 转啊转~**", color=0x3498DB)
+    embed.set_footer(text="纯娱乐推荐，投资需谨慎哦~")
     await interaction.followup.send(embed=embed)
     
-    # 动画：编辑Embed显示当前“指针”
+    # 动画：编辑Embed显示当前“指针”（用**bold**让代码字大）
     for i, current in enumerate(spin_sequence):
         # 延迟：快转0.2s，慢转渐增0.5-1s
         if i < len(fast_sequence):
@@ -106,13 +120,13 @@ async def buy(interaction: discord.Interaction, codes: str):
         else:
             await asyncio.sleep(0.5 + (i - len(fast_sequence)) * 0.1)  # 慢到1s
         
-        # 更新描述：显示当前代码 + 箭头效果
-        arrow = " → " if i < len(spin_sequence) - 1 else " ✅"
-        embed.description = f"🌀 转动中... 当前: {current}{arrow}"
+        # 更新描述：显示当前代码 + 箭头效果（**bold**字大）
+        arrow = " **→** " if i < len(spin_sequence) - 1 else " **✅**"
+        embed.description = f"🌀 **转动中... 当前: {current}{arrow}**"
         await interaction.edit_original_response(embed=embed)
     
-    # 最终停：推荐赢家
-    embed.description = f"🎉 转盘停下！今天推荐买: **{winner}** 🤑\n(纯娱乐，投资需谨慎~)"
+    # 最终停：推荐赢家（大字bold）
+    embed.description = f"🎉 **转盘停下！** 今天推荐买: **{winner}** 🤑"
     await interaction.edit_original_response(embed=embed)
 
 # 运行Bot

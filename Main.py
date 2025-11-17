@@ -45,17 +45,13 @@ async def lucky(interaction: discord.Interaction, stock: str):
     embed = discord.Embed(title=question, description=outcome, color=0x00ff00 if is_up else 0xff0000)
     embed.add_field(name="运势", value=disclaimer, inline=False)
     
-    # 根据结果选择GIF（匹配你的“涨”/“跌”文件；本地优先）
-    gif_path = 'rise.gif' if is_up else 'fall.gif'  # 涨=正面，跌=反面
-    if os.path.exists(gif_path):
-        file = discord.File(gif_path)
-        embed.set_image(url=f"attachment://{gif_path}")
-        await interaction.response.send_message(embed=embed, file=file)
+    # URL 模式：根据结果选择Imgur GIF
+    if is_up:
+        embed.set_image(url='https://i.imgur.com/hXY5B8Z.gif')  # 涨的GIF
     else:
-        # 如果用Imgur URL，替换这里：embed.set_image(url='https://i.imgur.com/你的rise.gif' if is_up else 'https://i.imgur.com/你的fall.gif')
-        embed.set_image(url="https://via.placeholder.com/300x300/FFD700/000000?text=🪙")  # 临时占位
-        await interaction.response.send_message(embed=embed)
-        print(f"警告：{gif_path} 不存在！请检查文件路径或用URL。")
+        embed.set_image(url='https://i.imgur.com/co0MGhu.gif')  # 跌的GIF
+    
+    await interaction.response.send_message(embed=embed)
 
 # 运行Bot
 if __name__ == '__main__':

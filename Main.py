@@ -59,17 +59,17 @@ async def lucky(interaction: discord.Interaction, stock: str, day: str):
     
     await interaction.response.send_message(embed=embed)
 
-# 新命令：/buy codes:字符串（逗号分隔，无需手动添加）
-@app_commands.describe(codes="输入股票代码，用逗号分隔，至少2个 e.g. AAPL,TSLA,GOOG (最多10个)")
-@bot.tree.command(name='buy', description='幸运大转盘：今天买什么？输入代码列表（逗号分隔），转盘选一个推荐~')
+# 新命令：/buy codes:字符串（空格分隔，无需手动添加）
+@app_commands.describe(codes="输入股票代码，用空格分隔，至少2个 e.g. AAPL TSLA GOOG (最多10个)")
+@bot.tree.command(name='buy', description='幸运大转盘：今天买什么？输入代码列表（空格分隔），转盘选一个推荐~')
 async def buy(interaction: discord.Interaction, codes: str):
     # 先defer，防3s响应限（动画需时）
     await interaction.response.defer()
     
-    # 解析代码列表
-    codes_list = [c.strip().upper() for c in codes.split(',') if c.strip()]
+    # 解析代码列表（空格分割）
+    codes_list = [c.strip().upper() for c in codes.split() if c.strip()]
     if len(codes_list) < 2:
-        await interaction.followup.send("哎呀，至少填2个股票代码！试试 /buy codes:AAPL,TSLA", ephemeral=True)
+        await interaction.followup.send("哎呀，至少填2个股票代码！试试 /buy codes:AAPL TSLA", ephemeral=True)
         return
     if len(codes_list) > 10:
         await interaction.followup.send("最多10个代码哦~ 简化列表试试！", ephemeral=True)
@@ -101,7 +101,7 @@ async def buy(interaction: discord.Interaction, codes: str):
     
     # 初始Embed（标题大字）
     embed = discord.Embed(title="🎰 **今天买什么？** 🛍️", description="🌀 **大转盘启动中... 转啊转~**", color=0x3498DB)
-    embed.set_footer(text="👻纯娱乐推荐，投资需谨慎哦")
+    embed.set_footer(text="纯娱乐推荐，投资需谨慎哦~")
     await interaction.followup.send(embed=embed)
     
     # 动画：编辑Embed显示当前“指针”（用**bold**让代码字大）

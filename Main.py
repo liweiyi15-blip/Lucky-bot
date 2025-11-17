@@ -45,17 +45,17 @@ async def lucky(interaction: discord.Interaction, stock: str, day: str):
     # 日期间翻译（中文显示）
     day_text = '今天' if day == 'today' else '明天'
     
-    # 问题文本（加🙏，description大字bold）
+    # 问题文本（加🙏，标题大字bold）
     question = f"**🙏硬币啊~硬币~告诉我{day_text}{stock}是涨还是跌？🙏**"
     
-    # 创建Embed（description上问题，thumbnail小GIF右上另行）
-    embed = discord.Embed(description=question, color=0x3498DB)  # 上文本大bold
+    # 创建Embed（标题大字问题，image下中等GIF）
+    embed = discord.Embed(title=question, color=0x3498DB)  # 标题大bold
     
-    # URL 模式：根据结果选择Imgur GIF（thumbnail小+另起一行视觉）
+    # URL 模式：根据结果选择Imgur GIF（image中等面积）
     if is_up:
-        embed.set_thumbnail(url='https://i.imgur.com/hXY5B8Z.gif')  # 涨的GIF（小图）
+        embed.set_image(url='https://i.imgur.com/hXY5B8Z.gif')  # 涨的GIF
     else:
-        embed.set_thumbnail(url='https://i.imgur.com/co0MGhu.gif')  # 跌的GIF（小图）
+        embed.set_image(url='https://i.imgur.com/co0MGhu.gif')  # 跌的GIF
     
     await interaction.response.send_message(embed=embed)
 
@@ -118,4 +118,11 @@ async def buy(interaction: discord.Interaction, codes: str):
         await interaction.edit_original_response(embed=embed)
     
     # 最终停：推荐赢家（大字bold）
-    embed.description = f"
+    embed.description = f"🎉 **转盘停下！** 今天推荐买: **{winner}** 🤑"
+    await interaction.edit_original_response(embed=embed)
+
+# 运行Bot
+if __name__ == '__main__':
+    if not TOKEN:
+        raise ValueError('请设置DISCORD_TOKEN环境变量！')
+    bot.run(TOKEN)

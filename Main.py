@@ -36,14 +36,8 @@ async def lucky(interaction: discord.Interaction, stock: str):
     result = random.choice([0, 1])
     is_up = result == 0  # True=涨
     
-    # 消息文本（outcome和disclaimer）
-    question = f"硬币啊~硬币~告诉我明天{stock}是涨还是跌？"
-    outcome = f"🪙 正面 - 明天{stock}要涨啦！大吉！" if is_up else f"🪙 反面 - 明天{stock}要跌... 小凶，稳住！"
-    disclaimer = "⚠️ 这只是娱乐预测，不是投资建议哦~ 实际以市场为准！"
-    
-    # 创建Embed，带GIF动画
-    embed = discord.Embed(title=question, description=outcome, color=0x00ff00 if is_up else 0xff0000)
-    embed.add_field(name="运势", value=disclaimer, inline=False)
+    # 创建纯GIF Embed（无文字、颜色，只动画）
+    embed = discord.Embed()
     
     # URL 模式：根据结果选择Imgur GIF
     if is_up:

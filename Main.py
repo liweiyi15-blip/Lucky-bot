@@ -80,17 +80,18 @@ async def buy(interaction: discord.Interaction, codes: str):
     
     # 构建轮盘序列：快转几圈 + 慢停到赢家
     full_wheel = codes_list * random.randint(2, 3)  # 2-3圈
-    # 修复：动态k，确保k <= len(full_wheel)，最小5步
-    max_fast = max(5, min(15, len(full_wheel)))  # 至少5，最多15或轮盘大小
-    k = random.randint(5, max_fast)
+    # 修复：k <= len(full_wheel)，最小1步（小列表时），目标5-15
+    k = random.randint(1, len(full_wheel))
+    if len(full_wheel) >= 5:
+        k = random.randint(5, min(15, len(full_wheel)))
     fast_spins = random.sample(range(len(full_wheel)), k)  # 安全采样
     fast_sequence = [full_wheel[i] for i in fast_spins]
     
     # 慢停序列：从随机点渐近赢家
     slow_start = random.choice(codes_list)
     slow_sequence = [slow_start]
-    slow_steps = random.randint(3, min(6, len(codes_list) * 2))  # 动态慢步，防小列表
-    for _ in range(slow_steps):  # 3-6步慢转
+    slow_steps = random.randint(1, min(6, len(codes_list)))  # 动态慢步，防小列表
+    for _ in range(slow_steps):  # 1-6步慢转
         next_code = random.choice(codes_list)
         slow_sequence.append(next_code)
     slow_sequence.append(winner)  # 最终停

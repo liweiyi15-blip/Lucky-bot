@@ -101,7 +101,7 @@ async def buy(interaction: discord.Interaction, codes: str):
     
     # 初始Embed（标题大字）
     embed = discord.Embed(title="🎰 **今天买什么？** 🛍️", description="🌀 **大转盘启动中... 转啊转~**", color=0x3498DB)
-    embed.set_footer(text="纯娱乐推荐，投资需谨慎哦~")
+    embed.set_footer(text="👻纯娱乐推荐，投资需谨慎哦")
     await interaction.followup.send(embed=embed)
     
     # 动画：编辑Embed显示当前“指针”（用**bold**让代码字大）

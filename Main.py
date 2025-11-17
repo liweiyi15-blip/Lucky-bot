@@ -22,18 +22,19 @@ async def on_ready():
     except Exception as e:
         print(e)
 
-# Slash命令：/lucky stock:字符串（股票代码） day:选择（今天/明天）
+# Slash命令：/lucky stock:字符串（股票代码） day:选择（今天/明天，必选）
 @app_commands.describe(stock="输入你希望被好运祝福的代码")
+@app_commands.describe(day="选择预测日期：今天 或 明天")
 @app_commands.choices(day=[
     app_commands.Choice(name='今天', value='today'),
     app_commands.Choice(name='明天', value='tomorrow')
 ])
 @bot.tree.command(name='lucky', description='用好运硬币预测股票涨跌！输入股票代码和日期试试运气~')
-async def lucky(interaction: discord.Interaction, stock: str, day: str = 'tomorrow'):
+async def lucky(interaction: discord.Interaction, stock: str, day: str):
     # 验证股票代码（简单，大写转换）
     stock = stock.upper().strip()
     if not stock:
-        await interaction.response.send_message("哎呀，股票代码不能为空！试试 /lucky stock:TSLA", ephemeral=True)
+        await interaction.response.send_message("哎呀，股票代码不能为空！试试 /lucky stock:TSLA day:今天", ephemeral=True)
         return
     
     # 随机结果：0=正面(涨), 1=反面(跌)

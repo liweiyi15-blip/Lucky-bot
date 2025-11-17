@@ -48,14 +48,14 @@ async def lucky(interaction: discord.Interaction, stock: str, day: str):
     # 问题文本（加🙏）
     question = f"🙏硬币啊~硬币~告诉我{day_text}{stock}是涨还是跌？🙏"
     
-    # 创建Embed（固定蓝色，标题问题，thumbnail小GIF）
-    embed = discord.Embed(title=question, color=0x3498DB)  # 固定Discord蓝
+    # 创建Embed（固定蓝色，文本description另行，image大GIF在下面左对齐视觉）
+    embed = discord.Embed(description=question, color=0x3498DB)  # 描述另行显示
     
-    # URL 模式：根据结果选择Imgur GIF（thumbnail缩小面积~1/3）
+    # URL 模式：根据结果选择Imgur GIF（set_image大一点，下面另行）
     if is_up:
-        embed.set_thumbnail(url='https://i.imgur.com/hXY5B8Z.gif')  # 涨的GIF（小图）
+        embed.set_image(url='https://i.imgur.com/hXY5B8Z.gif')  # 涨的GIF（大图）
     else:
-        embed.set_thumbnail(url='https://i.imgur.com/co0MGhu.gif')  # 跌的GIF（小图）
+        embed.set_image(url='https://i.imgur.com/co0MGhu.gif')  # 跌的GIF（大图）
     
     await interaction.response.send_message(embed=embed)
 

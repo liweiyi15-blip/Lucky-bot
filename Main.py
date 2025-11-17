@@ -100,7 +100,7 @@ async def buy(interaction: discord.Interaction, codes: str):
     spin_sequence = fast_sequence + slow_sequence
     
     # 初始Embed（标题大字）
-    embed = discord.Embed(title="🛍️ **今天买什么？** 🛍️", description="🎰 **大转盘启动中... 转啊转~**", color=0x3498DB)
+    embed = discord.Embed(title="**今天买什么？** 🛍️", description="🎰 **大转盘启动中... 转啊转~**", color=0x3498DB)
     embed.set_footer(text="👻纯娱乐推荐，投资需谨慎")
     await interaction.followup.send(embed=embed)
     

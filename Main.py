@@ -60,7 +60,7 @@ async def lucky(interaction: discord.Interaction, stock: str, day: str):
     await interaction.response.send_message(embed=embed)
 
 # 新命令：/buy codes:字符串（空格分隔，无需手动添加）
-@app_commands.describe(codes="输入股票代码，用空格分隔，至少2个 e.g. AAPL TSLA GOOG (最多10个)")
+@app_commands.describe(codes="输入股票代码，用空格分隔，至少2个，例如：AAPL TSLA GOOG (最多12个)")
 @bot.tree.command(name='buy', description='幸运大转盘：今天买什么？输入代码列表（空格分隔），转盘选一个推荐~')
 async def buy(interaction: discord.Interaction, codes: str):
     # 先defer，防3s响应限（动画需时）
@@ -71,8 +71,8 @@ async def buy(interaction: discord.Interaction, codes: str):
     if len(codes_list) < 2:
         await interaction.followup.send("哎呀，至少填2个股票代码！试试 /buy codes:AAPL TSLA", ephemeral=True)
         return
-    if len(codes_list) > 10:
-        await interaction.followup.send("最多10个代码哦~ 简化列表试试！", ephemeral=True)
+    if len(codes_list) > 12:
+        await interaction.followup.send("最多12个代码哦~ 简化列表试试！", ephemeral=True)
         return
     
     # 随机选赢家

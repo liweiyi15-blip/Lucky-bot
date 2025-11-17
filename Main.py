@@ -39,8 +39,8 @@ async def lucky(interaction: discord.Interaction, stock: str):
     # 问题文本（加🪙和🙏）
     question = f"🪙硬币啊~硬币~告诉我明天{stock}是涨还是跌？🙏"
     
-    # 创建Embed（标题为问题，无其他文字，只GIF）
-    embed = discord.Embed(title=question, color=0x00ff00 if is_up else 0xff0000)
+    # 创建Embed（固定蓝色，无其他文字，只GIF）
+    embed = discord.Embed(title=question, color=0x3498DB)  # 固定Discord蓝
     
     # URL 模式：根据结果选择Imgur GIF
     if is_up:

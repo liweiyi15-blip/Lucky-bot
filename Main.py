@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import random
 import os
-from discord import app_commands  # 用于describe参数
+from discord import app_commands  # 用于describe和choices参数
 
 # 设置Bot意图
 intents = discord.Intents.default()
@@ -22,10 +22,14 @@ async def on_ready():
     except Exception as e:
         print(e)
 
-# Slash命令：/lucky stock:字符串（股票代码）
+# Slash命令：/lucky stock:字符串（股票代码） day:选择（今天/明天）
 @app_commands.describe(stock="输入你希望被好运祝福的代码")
-@bot.tree.command(name='lucky', description='用好运硬币预测明天股票涨跌！输入股票代码试试运气~')
-async def lucky(interaction: discord.Interaction, stock: str):
+@app_commands.choices(day=[
+    app_commands.Choice(name='今天', value='today'),
+    app_commands.Choice(name='明天', value='tomorrow')
+])
+@bot.tree.command(name='lucky', description='用好运硬币预测股票涨跌！输入股票代码和日期试试运气~')
+async def lucky(interaction: discord.Interaction, stock: str, day: str = 'tomorrow'):
     # 验证股票代码（简单，大写转换）
     stock = stock.upper().strip()
     if not stock:
@@ -36,8 +40,11 @@ async def lucky(interaction: discord.Interaction, stock: str):
     result = random.choice([0, 1])
     is_up = result == 0  # True=涨
     
+    # 日期间翻译（中文显示）
+    day_text = '今天' if day == 'today' else '明天'
+    
     # 问题文本（加🪙和🙏）
-    question = f"🪙硬币啊~硬币~告诉我明天{stock}是涨还是跌？🙏"
+    question = f"🪙硬币啊~硬币~告诉我{day_text}{stock}是涨还是跌？🙏"
     
     # 创建Embed（固定蓝色，无其他文字，只GIF）
     embed = discord.Embed(title=question, color=0x3498DB)  # 固定Discord蓝

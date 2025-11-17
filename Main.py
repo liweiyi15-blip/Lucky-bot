@@ -48,19 +48,19 @@ async def lucky(interaction: discord.Interaction, stock: str, day: str):
     # 问题文本（加🙏）
     question = f"🙏硬币啊~硬币~告诉我{day_text}{stock}是涨还是跌？🙏"
     
-    # 创建Embed（固定蓝色，无其他文字，只GIF）
+    # 创建Embed（固定蓝色，标题问题，thumbnail小GIF）
     embed = discord.Embed(title=question, color=0x3498DB)  # 固定Discord蓝
     
-    # URL 模式：根据结果选择Imgur GIF
+    # URL 模式：根据结果选择Imgur GIF（thumbnail缩小面积~1/3）
     if is_up:
-        embed.set_image(url='https://i.imgur.com/hXY5B8Z.gif')  # 涨的GIF
+        embed.set_thumbnail(url='https://i.imgur.com/hXY5B8Z.gif')  # 涨的GIF（小图）
     else:
-        embed.set_image(url='https://i.imgur.com/co0MGhu.gif')  # 跌的GIF
+        embed.set_thumbnail(url='https://i.imgur.com/co0MGhu.gif')  # 跌的GIF（小图）
     
     await interaction.response.send_message(embed=embed)
 
 # 新命令：/buy codes:字符串（空格分隔，无需手动添加）
-@app_commands.describe(codes="输入股票代码，用空格分隔，至少2个，例如：AAPL TSLA GOOG (最多12个)")
+@app_commands.describe(codes="输入股票代码，用空格分隔，至少2个 e.g. AAPL TSLA GOOG (最多12个)")
 @bot.tree.command(name='buy', description='幸运大转盘：今天买什么？输入代码列表（空格分隔），转盘选一个推荐~')
 async def buy(interaction: discord.Interaction, codes: str):
     # 先defer，防3s响应限（动画需时）

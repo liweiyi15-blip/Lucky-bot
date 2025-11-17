@@ -45,8 +45,8 @@ async def lucky(interaction: discord.Interaction, stock: str, day: str):
     # 日期间翻译（中文显示）
     day_text = '今天' if day == 'today' else '明天'
     
-    # 问题文本（加🪙和🙏）
-    question = f"🪙硬币啊~硬币~告诉我{day_text}{stock}是涨还是跌？🙏"
+    # 问题文本（加🙏）
+    question = f"🙏硬币啊~硬币~告诉我{day_text}{stock}是涨还是跌？🙏"
     
     # 创建Embed（固定蓝色，无其他文字，只GIF）
     embed = discord.Embed(title=question, color=0x3498DB)  # 固定Discord蓝
@@ -60,7 +60,7 @@ async def lucky(interaction: discord.Interaction, stock: str, day: str):
     await interaction.response.send_message(embed=embed)
 
 # 新命令：/buy codes:字符串（空格分隔，无需手动添加）
-@app_commands.describe(codes="输入代码，用空格分隔，至少2个，例如:AAPL TSLA GOOG (最多10个)")
+@app_commands.describe(codes="输入股票代码，用空格分隔，至少2个 e.g. AAPL TSLA GOOG (最多10个)")
 @bot.tree.command(name='buy', description='幸运大转盘：今天买什么？输入代码列表（空格分隔），转盘选一个推荐~')
 async def buy(interaction: discord.Interaction, codes: str):
     # 先defer，防3s响应限（动画需时）
@@ -100,8 +100,8 @@ async def buy(interaction: discord.Interaction, codes: str):
     spin_sequence = fast_sequence + slow_sequence
     
     # 初始Embed（标题大字）
-    embed = discord.Embed(title="🛒 **今天买什么？** 🛍️", description="🎰 **大转盘启动中... 转啊转~**", color=0x3498DB)
-    embed.set_footer(text="纯娱乐推荐，投资需谨慎哦~")
+    embed = discord.Embed(title="🛍️ **今天买什么？** 🛍️", description="🎰 **大转盘启动中... 转啊转~**", color=0x3498DB)
+    embed.set_footer(text="👻纯娱乐推荐，投资需谨慎")
     await interaction.followup.send(embed=embed)
     
     # 动画：编辑Embed显示当前“指针”（用**bold**让代码字大）
@@ -114,7 +114,7 @@ async def buy(interaction: discord.Interaction, codes: str):
         
         # 更新描述：显示当前代码 + 箭头效果（**bold**字大）
         arrow = " **→** " if i < len(spin_sequence) - 1 else " **✅**"
-        embed.description = f"🌀 **转动中... 当前: {current}{arrow}**"
+        embed.description = f"🎰 **转动中... 当前: {current}{arrow}**"
         await interaction.edit_original_response(embed=embed)
     
     # 最终停：推荐赢家（大字bold）

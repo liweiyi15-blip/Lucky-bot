@@ -59,7 +59,7 @@ async def lucky(interaction: discord.Interaction, stock: str, day: str):
     
     await interaction.response.send_message(embed=embed)
 
-# 新命令：/buy codes1:字符串 ... codes12:字符串（每个填空可选，最多12个）
+# 新命令：/buy codes1:字符串 ... codes12:字符串（每个填空可选，直接显示所有框）
 @app_commands.describe(codes1="股票代码1 (可选)")
 @app_commands.describe(codes2="股票代码2 (可选)")
 @app_commands.describe(codes3="股票代码3 (可选)")
@@ -72,7 +72,7 @@ async def lucky(interaction: discord.Interaction, stock: str, day: str):
 @app_commands.describe(codes10="股票代码10 (可选)")
 @app_commands.describe(codes11="股票代码11 (可选)")
 @app_commands.describe(codes12="股票代码12 (可选)")
-@bot.tree.command(name='buy', description='幸运大转盘：今天买什么？填入股票代码（每个填空一个），转盘选一个推荐~')
+@bot.tree.command(name='buy', description='幸运大转盘：今天买什么？填入股票代码（每个填空一个，可选填1-12个），转盘选一个推荐~')
 async def buy(interaction: discord.Interaction, codes1: str = None, codes2: str = None, codes3: str = None,
               codes4: str = None, codes5: str = None, codes6: str = None, codes7: str = None,
               codes8: str = None, codes9: str = None, codes10: str = None, codes11: str = None, codes12: str = None):
@@ -83,9 +83,6 @@ async def buy(interaction: discord.Interaction, codes1: str = None, codes2: str 
     codes_list = [c.strip().upper() for c in [codes1, codes2, codes3, codes4, codes5, codes6, codes7, codes8, codes9, codes10, codes11, codes12] if c and c.strip()]
     if not codes_list:
         await interaction.followup.send("哎呀，至少填一个股票代码！试试 /buy codes1:AAPL codes2:TSLA", ephemeral=True)
-        return
-    if len(codes_list) > 12:
-        await interaction.followup.send("最多12个代码哦~ 简化试试！", ephemeral=True)
         return
     
     # 随机选赢家

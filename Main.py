@@ -45,13 +45,13 @@ async def lucky(interaction: discord.Interaction, stock: str, day: str):
     # 日期间翻译（中文显示）
     day_text = '今天' if day == 'today' else '明天'
     
-    # 问题文本（加🙏，标题大字bold）
-    question = f"**🙏硬币啊~硬币~告诉我{day_text}{stock}是涨还是跌？🙏**"
+    # 问题文本（加🙏）
+    question = f"🙏硬币啊~硬币~告诉我{day_text}{stock}是涨还是跌？🙏"
     
-    # 创建Embed（标题大字问题，image下中等GIF）
-    embed = discord.Embed(title=question, color=0x3498DB)  # 标题大bold
+    # 创建Embed（固定蓝色，description问题上，image GIF下另起一行）
+    embed = discord.Embed(description=question, color=0x3498DB)  # 上文本
     
-    # URL 模式：根据结果选择Imgur GIF（image中等面积）
+    # URL 模式：根据结果选择Imgur GIF（image下另起，Discord默认中等大小）
     if is_up:
         embed.set_image(url='https://i.imgur.com/hXY5B8Z.gif')  # 涨的GIF
     else:
@@ -100,29 +100,4 @@ async def buy(interaction: discord.Interaction, codes: str):
     spin_sequence = fast_sequence + slow_sequence
     
     # 初始Embed（标题大字）
-    embed = discord.Embed(title="**今天买什么？** 🛍️", description="🎰 **大转盘启动中... 转啊转~**", color=0x3498DB)
-    embed.set_footer(text="👻纯娱乐推荐，投资需谨慎")
-    await interaction.followup.send(embed=embed)
-    
-    # 动画：编辑Embed显示当前“指针”（用**bold**让代码字大）
-    for i, current in enumerate(spin_sequence):
-        # 延迟：快转0.2s，慢转渐增0.5-1s
-        if i < len(fast_sequence):
-            await asyncio.sleep(0.2)
-        else:
-            await asyncio.sleep(0.5 + (i - len(fast_sequence)) * 0.1)  # 慢到1s
-        
-        # 更新描述：显示当前代码 + 箭头效果（**bold**字大）
-        arrow = " **→** " if i < len(spin_sequence) - 1 else " **✅**"
-        embed.description = f"🎰 **转动中... 当前: {current}{arrow}**"
-        await interaction.edit_original_response(embed=embed)
-    
-    # 最终停：推荐赢家（大字bold）
-    embed.description = f"🎉 **转盘停下！** 今天推荐买: **{winner}** 🤑"
-    await interaction.edit_original_response(embed=embed)
-
-# 运行Bot
-if __name__ == '__main__':
-    if not TOKEN:
-        raise ValueError('请设置DISCORD_TOKEN环境变量！')
-    bot.run(TOKEN)
+    embed = discord.Embed(title="**今天买什么？** 🛍️", description="

@@ -54,7 +54,7 @@ async def lucky(interaction: discord.Interaction, stock: str, day: str):
 async def buy(interaction: discord.Interaction):
     await interaction.response.defer()
 
-    hot7 = ['TSLA', 'NVDA', 'GOOG', 'XPEV', 'CRCL', 'BABA', 'MU']
+    hot7 = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'TSLA']
     fixed = ['TQQQ', 'SQQQ', 'BTC', 'BABA', 'NIO', 'UVXY', '不操作', '清仓']
     all_options = list(dict.fromkeys(hot7 + fixed))
 

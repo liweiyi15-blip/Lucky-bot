@@ -28,39 +28,40 @@ async def on_ready():
     except Exception as e:
         print(e)
 
-# /lucky 金币预测（不变）
+# /coin 金币预测（原 /lucky，已改名）
 @app_commands.describe(stock="输入你希望被好运祝福的代码")
 @app_commands.describe(day="选择预测日期：今天 或 明天")
 @app_commands.choices(day=[
     app_commands.Choice(name='今天', value='today'),
     app_commands.Choice(name='明天', value='tomorrow')
 ])
-@bot.tree.command(name='lucky', description='用好运硬币预测股票涨跌！')
-async def lucky(interaction: discord.Interaction, stock: str, day: str):
+@bot.tree.command(name='coin', description='用好运硬币预测股票涨跌！')
+async def coin(interaction: discord.Interaction, stock: str, day: str):
     stock = stock.upper().strip()
     if not stock:
         await interaction.response.send_message("股票代码不能为空！", ephemeral=True)
         return
+    
     result = random.choice([0, 1])
     is_up = result == 0
     day_text = '今天' if day == 'today' else '明天'
+    
     question = f"**🙏硬币啊~硬币~告诉我{day_text}{stock}是涨还是跌？🙏**"
     embed = discord.Embed(title=question, color=0x3498DB)
     embed.set_image(url='https://i.imgur.com/hXY5B8Z.gif' if is_up else 'https://i.imgur.com/co0MGhu.gif')
     await interaction.response.send_message(embed=embed)
 
-# /buy 超级命运转盘（转动中最大号 + 标题🛍️ + 防泄底）
+# /buy 超级命运转盘（保持不变）
 @bot.tree.command(name='buy', description='每日自动热度转盘 + 实时原因，直接转！')
 async def buy(interaction: discord.Interaction):
     await interaction.response.defer()
 
-    hot7 = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'TSLA']
+    hot7 = ['TSLA', 'NVDA', 'GOOG', 'XPEV', 'CRCL', 'BABA', 'MU']
     fixed = ['TQQQ', 'SQQQ', 'BTC', 'BABA', 'NIO', 'UVXY', '不操作', '清仓']
     all_options = list(dict.fromkeys(hot7 + fixed))
 
     winner = random.choice(all_options)
 
-    # 转盘动画（去掉最后一帧防泄底）
     full_wheel = all_options * random.randint(2, 3)
     k = random.randint(5, min(15, len(full_wheel)))
     fast_sequence = [full_wheel[i] for i in random.sample(range(len(full_wheel)), k)]
@@ -80,10 +81,9 @@ async def buy(interaction: discord.Interaction):
         embed.description = f"### 🎰 **转动中... 当前: {current}{arrow}** ###"
         await interaction.edit_original_response(embed=embed)
 
-    await asyncio.sleep(0.8)  # 停顿仪式感
+    await asyncio.sleep(0.8)
 
-    # 生成一句真实原因
-    prompt = f"用一句简要真实的原因总结今天买{winner}的理由，严格15-23字以内，无迷信"
+    prompt = f"用一句简要真实的原因总结今天买{winner}的理由，严格15-25字以内，无迷信"
     completion = await client.chat.completions.create(
         model="deepseek-chat",
         messages=[{"role": "user", "content": prompt}],

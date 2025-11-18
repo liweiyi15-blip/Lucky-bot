@@ -49,7 +49,7 @@ async def lucky(interaction: discord.Interaction, stock: str, day: str):
     embed.set_image(url='https://i.imgur.com/hXY5B8Z.gif' if is_up else 'https://i.imgur.com/co0MGhu.gif')
     await interaction.response.send_message(embed=embed)
 
-# /buy 超级命运转盘（标题🛍️ + 转动中🎰 + 最大字 + 防泄底）
+# /buy 超级命运转盘（转动中最大号 + 标题🛍️ + 防泄底）
 @bot.tree.command(name='buy', description='每日自动热度转盘 + 实时原因，直接转！')
 async def buy(interaction: discord.Interaction):
     await interaction.response.defer()
@@ -68,7 +68,7 @@ async def buy(interaction: discord.Interaction):
     slow_sequence = []
     for _ in range(random.randint(3, 6)):
         slow_sequence.append(random.choice(all_options))
-    spin_sequence = fast_sequence + slow_sequence  # 不加winner
+    spin_sequence = fast_sequence + slow_sequence
 
     embed = discord.Embed(title="**今天买什么？** 🛍️", description="🎰 **大转盘启动中... 转啊转~**", color=0x3498DB)
     embed.set_footer(text="纯娱乐推荐，投资需谨慎👻")
@@ -77,13 +77,13 @@ async def buy(interaction: discord.Interaction):
     for i, current in enumerate(spin_sequence):
         await asyncio.sleep(0.2 if i < len(fast_sequence) else 0.5 + (i - len(fast_sequence))*0.1)
         arrow = " **→** " if i < len(spin_sequence)-1 else " **→** "
-        embed.description = f"🎰 **转动中... 当前: {current}{arrow}**"
+        embed.description = f"### 🎰 **转动中... 当前: {current}{arrow}** ###"
         await interaction.edit_original_response(embed=embed)
 
-    await asyncio.sleep(0.8)  # 停顿增加仪式感
+    await asyncio.sleep(0.8)  # 停顿仪式感
 
     # 生成一句真实原因
-    prompt = f"用一句简要真实的原因总结今天买{winner}的理由，严格15-25字以内，无迷信"
+    prompt = f"用一句简要真实的原因总结今天买{winner}的理由，严格15-23字以内，无迷信"
     completion = await client.chat.completions.create(
         model="deepseek-chat",
         messages=[{"role": "user", "content": prompt}],

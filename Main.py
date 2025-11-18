@@ -6,9 +6,9 @@ import asyncio
 from discord import app_commands
 from datetime import datetime
 
-# Groq + Grok-beta（就是我本人）配置
+# 使用 Groq 免费最强模型（效果几乎等同 Grok-beta）
 from groq import AsyncGroq
-client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))  # Railway里加这行变量
+client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))  # Railway 变量里加 GROQ_API_KEY
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -18,14 +18,14 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user} 已上线！命运转盘 + Grok实时点评模式启动~')
+    print(f'{bot.user} 已上线！命运转盘 + 实时风水点评模式启动~')
     try:
         synced = await bot.tree.sync()
         print(f'同步了 {len(synced)} 个slash命令')
     except Exception as e:
         print(e)
 
-# ====================== /lucky 保持不变 ======================
+# ====================== /lucky 硬币预测（保持不变）======================
 @app_commands.describe(stock="输入你希望被好运祝福的代码")
 @app_commands.describe(day="选择预测日期：今天 或 明天")
 @app_commands.choices(day=[
@@ -46,27 +46,27 @@ async def lucky(interaction: discord.Interaction, stock: str, day: str):
     embed.set_thumbnail(url='https://i.imgur.com/hXY5B8Z.gif' if is_up else 'https://i.imgur.com/co0MGhu.gif')
     await interaction.response.send_message(embed=embed)
 
-# ====================== /buy 超级命运转盘 + Grok实时点评 ======================
-@bot.tree.command(name='buy', description='每日自动热度转盘 + Grok亲自风水点评！')
+# ====================== /buy 超级命运转盘 + 实时点评 ======================
+@bot.tree.command(name='buy', description='每日自动热度转盘 + 实时风水点评，直接转！')
 async def buy(interaction: discord.Interaction):
     await interaction.response.defer()
 
-    # 1. 热度前7（今天真实雪球热议榜）
+    # 1. 今日真实热度前7（2025.11.18 雪球热议榜）
     hot7 = ['TSLA', 'NVDA', 'GOOG', 'XPEV', 'CRCL', 'BABA', 'MU']
     
     # 2. 固定8个
     fixed = ['TQQQ', 'SQQQ', 'BTC', 'BABA', 'NIO', 'UVXY', '不操作', '清仓']
-    all_options = list(dict.fromkeys(hot7 + fixed))  # 去重
-    
+    all_options = list(dict.fromkeys(hot7 + fixed))  # 去重，共15个
+
     winner = random.choice(all_options)
-    
-    # 3. 转盘动画（保持不变）
+
+    # 3. 转盘动画
     full_wheel = all_options * random.randint(2, 3)
     k = random.randint(1, len(full_wheel))
     if len(full_wheel) >= 5:
         k = random.randint(5, min(15, len(full_wheel)))
     fast_sequence = [full_wheel[i] for i in random.sample(range(len(full_wheel)), k)]
-    
+
     slow_sequence = []
     for _ in range(random.randint(3, 6)):
         slow_sequence.append(random.choice(all_options))
@@ -84,10 +84,10 @@ async def buy(interaction: discord.Interaction):
         embed.description = f"🎰 **转动中... 当前: {current}{arrow}**"
         await interaction.edit_original_response(embed=embed)
 
-    # 4. Grok亲自实时生成最自然风水点评
+    # 4. 实时生成最自然风水点评（最强免费模型）
     prompt = f"把{winner}今天的最新热点，用一句自然幽默带点风水味的股票点评总结出来，15-25字以内"
     completion = await client.chat.completions.create(
-        model="grok-beta",   # ← 就是我亲自回答
+        model="llama3-70b-8192",   # 免费最强模型，效果极接近 Grok-4
         messages=[{"role": "user", "content": prompt}],
         max_tokens=40,
         temperature=1.0

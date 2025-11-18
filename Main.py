@@ -4,13 +4,12 @@ import random
 import os
 import asyncio
 from discord import app_commands
-from datetime import datetime
 
-# DeepSeek 个人免费API（你自己的key，永久无限次）
+# DeepSeek 个人API（你已充值成功）
 from openai import AsyncOpenAI
 
 client = AsyncOpenAI(
-    api_key=os.getenv("DEEPSEEK_API_KEY"),  # Railway里加你自己的key
+    api_key=os.getenv("DEEPSEEK_API_KEY"),
     base_url="https://api.deepseek.com/v1"
 )
 
@@ -22,7 +21,7 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user} 已上线！命运转盘 + DeepSeek实时点评模式启动~')
+    print(f'{bot.user} 已上线！命运转盘 + DeepSeek实时热度+原因模式启动~')
     try:
         synced = await bot.tree.sync()
         print(f'同步了 {len(synced)} 个slash命令')
@@ -50,37 +49,39 @@ async def lucky(interaction: discord.Interaction, stock: str, day: str):
     embed.set_image(url='https://i.imgur.com/hXY5B8Z.gif' if is_up else 'https://i.imgur.com/co0MGhu.gif')
     await interaction.response.send_message(embed=embed)
 
-# /buy 超级命运转盘（热度每天自动更新 + 你的私人DeepSeek点评）
-@bot.tree.command(name='buy', description='每日自动热度转盘 + 实时风水点评，直接转！')
+# /buy 终极版：DeepSeek实时热度7股 + 真实简要原因 + 极简大字
+@bot.tree.command(name='buy', description='每日DeepSeek实时热度转盘 + 专业简要原因')
 async def buy(interaction: discord.Interaction):
     await interaction.response.defer()
 
-    # 热度前7（雪球热议榜，每天自动更新）
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get("https://xueqiu.com", timeout=10) as resp:
-                text = await resp.text()
-            import re
-            matches = re.findall(r'"symbol":"([A-Z]+)"', text)
-            matches = [m for m in matches if len(m) <= 5]
-            hot7 = list(dict.fromkeys(matches))[:7]
-            if len(hot7) < 7:
-                hot7 += ['NVDA', 'TSLA', 'AAPL', 'MSFT', 'GOOG', 'AMZN', 'META'][:7-len(hot7)]
-    except:
-        hot7 = ['NVDA', 'TSLA', 'AAPL', 'MSFT', 'GOOG', 'AMZN', 'META']
+    # 1. DeepSeek实时给出今日最热7股 + 每只一句真实原因
+    prompt = "根据今天（2025年11月18日）全球股市实时热度和新闻，列出最热门的7只美股/加密货币代码（大写），每只配一句最简要真实原因，格式严格如下（不要任何解释）：\n1. TSLA - Robotaxi牌照落地\n2. NVDA - Blackwell出货"
 
+    completion = await client.chat.completions.create(
+        model="deepseek-chat",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=200,
+        temperature=0.7
+    )
+    hot_text = completion.choices[0].message.content.strip()
+
+    # 解析7股
+    hot7 = []
+    for line in hot_text.split('\n')[:7]:
+        if '-' in line:
+            code = line.split('-')[0].strip().split('.')[-1].strip()
+            hot7.append(code)
+
+    # 2. 固定8个
     fixed = ['TQQQ', 'SQQQ', 'BTC', 'BABA', 'NIO', 'UVXY', '不操作', '清仓']
     all_options = list(dict.fromkeys(hot7 + fixed))
 
     winner = random.choice(all_options)
 
-    # 动画
+    # 3. 转盘动画
     full_wheel = all_options * random.randint(2, 3)
-    k = random.randint(1, len(full_wheel))
-    if len(full_wheel) >= 5:
-        k = random.randint(5, min(15, len(full_wheel)))
+    k = random.randint(5, min(15, len(full_wheel)))
     fast_sequence = [full_wheel[i] for i in random.sample(range(len(full_wheel)), k)]
-
     slow_sequence = []
     for _ in range(random.randint(3, 6)):
         slow_sequence.append(random.choice(all_options))
@@ -97,18 +98,16 @@ async def buy(interaction: discord.Interaction):
         embed.description = f"🎰 **转动中... 当前: {current}{arrow}**"
         await interaction.edit_original_response(embed=embed)
 
-    # 你的私人DeepSeek实时生成点评（每次都不一样）
-    import time
-    random_seed = int(time.time() * 1000) % 100000
-    prompt = f"[随机种子{random_seed}] 把{winner}今天的最新热点，用一句自然幽默带点风水味的股票点评总结出来，15-25字以内，风格要变化"
-
-    completion = await client.chat.completions.create(
-        model="deepseek-chat",   # DeepSeek最强免费模型
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=40,
-        temperature=1.2
+    # 4. 生成一句真实简要原因（严格25字以内，无迷信）
+    reason_prompt = f"用一句简要真实的原因总结今天买{winner}的理由，严格15-25字以内，无迷信"
+    reason_completion = await client.chat.completions.create(
+        model="deepseek-chat",
+        messages=[{"role": "user", "content": reason_prompt}],
+        max_tokens=30,
+        temperature=0.8
     )
-    reason = completion.choices[0].message.content.strip()
+    reason = reason_completion.choices[0].message.content.strip()
+    reason = (reason[:25] + '...') if len(reason) > 25 else reason
 
     if winner in ['不操作', '清仓']:
         final = f"🎉 **转盘停下！**\n### 今天建议 **{winner}** ###\n{reason}"

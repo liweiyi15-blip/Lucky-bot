@@ -5,11 +5,11 @@ import os
 import asyncio
 from discord import app_commands
 
-# DeepSeek 个人API
+# DeepSeek 个人API（你已充值成功）
 from openai import AsyncOpenAI
 
 client = AsyncOpenAI(
-    api_key=os.getenv("DEEPSEEK_API_KEY"),
+    api_key=os.getenv("DEEPSEEK_API_KEY"),  # Railway 环境变量里设置你的 key
     base_url="https://api.deepseek.com/v1"
 )
 
@@ -28,20 +28,54 @@ async def on_ready():
     except Exception as e:
         print(e)
 
-# /lucky 保持不变（略）
+# ============================= /lucky 硬币预测 =============================
+@app_commands.describe(stock="输入你希望被好运祝福的代码")
+@app_commands.describe(day="选择预测日期：今天 或 明天")
+@app_commands.choices(day=[
+    app_commands.Choice(name='今天', value='today'),
+    app_commands.Choice(name='明天', value='tomorrow')
+])
+@bot.tree.command(name='lucky', description='用好运硬币预测股票涨跌！')
+async def lucky(interaction: discord.Interaction, stock: str, day: str):
+    stock = stock.upper().strip()
+    if not stock:
+        await interaction.response.send_message("股票代码不能为空！", ephemeral=True)
+        return
+    
+    result = random.choice([0, 1])
+    is_up = result == 0
+    day_text = '今天' if day == 'today' else '明天'
+    
+    question = f"**🙏硬币啊~硬币~告诉我{day_text}{stock}是涨还是跌？🙏**"
+    embed = discord.Embed(title=question, color=0x3498DB)
+    embed.set_image(url='https://i.imgur.com/hXY5B8Z.gif' if is_up else 'https://i.imgur.com/co0MGhu.gif')
+    await interaction.response.send_message(embed=embed)
 
-# /buy 超级命运转盘（<>只包裹股票代码）
+# ============================= /buy 超级命运转盘 =============================
 @bot.tree.command(name='buy', description='每日自动热度转盘 + 实时点评，直接转！')
 async def buy(interaction: discord.Interaction):
     await interaction.response.defer()
 
-    hot7 = ['TSLA', 'NVDA', 'GOOG', 'XPEV', 'CRCL', 'BABA', 'MU']
+    # 热度前7（雪球热议榜，每天自动更新）
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://xueqiu.com", timeout=10) as resp:
+                text = await resp.text()
+            import re
+            matches = re.findall(r'"symbol":"([A-Z]+)"', text)
+            matches = [m for m in matches if len(m) <= 5]
+            hot7 = list(dict.fromkeys(matches))[:7]
+            if len(hot7) < 7:
+                hot7 += ['NVDA', 'TSLA', 'AAPL', 'MSFT', 'GOOG', 'AMZN', 'META'][:7-len(hot7)]
+    except:
+        hot7 = ['NVDA', 'TSLA', 'AAPL', 'MSFT', 'GOOG', 'AMZN', 'META']
+
     fixed = ['TQQQ', 'SQQQ', 'BTC', 'BABA', 'NIO', 'UVXY', '不操作', '清仓']
     all_options = list(dict.fromkeys(hot7 + fixed))
 
     winner = random.choice(all_options)
 
-    # 转盘动画（不变）
+    # 转盘动画
     full_wheel = all_options * random.randint(2, 3)
     k = random.randint(5, min(15, len(full_wheel)))
     fast_sequence = [full_wheel[i] for i in random.sample(range(len(full_wheel)), k)]
@@ -62,8 +96,8 @@ async def buy(interaction: discord.Interaction):
         embed.description = f"🎰 **转动中... 当前: {current}{arrow}**"
         await interaction.edit_original_response(embed=embed)
 
-    # 生成一句真实原因（严格25字以内）
-    prompt = f"用一句简要真实的原因总结今天{winner}的理由，严格15-25字以内，无迷信"
+    # DeepSeek生成一句真实原因（严格25字以内）
+    prompt = f"用一句简要真实的原因总结今天买{winner}的理由，严格15-25字以内，无迷信"
 
     completion = await client.chat.completions.create(
         model="deepseek-chat",
@@ -74,7 +108,7 @@ async def buy(interaction: discord.Interaction):
     reason = completion.choices[0].message.content.strip()
     reason = (reason[:25] + '...') if len(reason) > 25 else reason
 
-    # 严格按你要求格式（<>只包裹股票代码）
+    # 严格按你最新要求格式（<>只包裹股票代码）
     if winner in ['不操作', '清仓']:
         final = f"转盘停下！🎉\n今天建议 <**{winner}**>\n（{reason}）"
     else:

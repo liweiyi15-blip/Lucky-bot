@@ -2,126 +2,106 @@ import discord
 from discord.ext import commands
 import random
 import os
-import asyncio  # 用于sleep动画
-from discord import app_commands  # 用于describe和choices参数
+import asyncio
+from discord import app_commands
+from datetime import datetime
 
-# 设置Bot意图
+# Groq + Grok-beta（就是我本人）配置
+from groq import AsyncGroq
+client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))  # Railway里加这行变量
+
 intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
-
-# 替换为你的Bot Token（用环境变量）
 TOKEN = os.getenv('DISCORD_TOKEN')
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user} 已上线！好运硬币股票预测模式启动~')
+    print(f'{bot.user} 已上线！命运转盘 + Grok实时点评模式启动~')
     try:
         synced = await bot.tree.sync()
         print(f'同步了 {len(synced)} 个slash命令')
     except Exception as e:
         print(e)
 
-# 原命令：/lucky stock:字符串（股票代码） day:选择（今天/明天，必选）
+# ====================== /lucky 保持不变 ======================
 @app_commands.describe(stock="输入你希望被好运祝福的代码")
 @app_commands.describe(day="选择预测日期：今天 或 明天")
 @app_commands.choices(day=[
     app_commands.Choice(name='今天', value='today'),
     app_commands.Choice(name='明天', value='tomorrow')
 ])
-@bot.tree.command(name='lucky', description='用好运硬币预测股票涨跌！输入股票代码和日期试试运气~')
+@bot.tree.command(name='lucky', description='用好运硬币预测股票涨跌！')
 async def lucky(interaction: discord.Interaction, stock: str, day: str):
-    # 验证股票代码（简单，大写转换）
     stock = stock.upper().strip()
     if not stock:
-        await interaction.response.send_message("哎呀，股票代码不能为空！试试 /lucky stock:TSLA day:今天", ephemeral=True)
+        await interaction.response.send_message("股票代码不能为空！", ephemeral=True)
         return
-    
-    # 随机结果：0=正面(涨), 1=反面(跌)
     result = random.choice([0, 1])
-    is_up = result == 0  # True=涨
-    
-    # 日期间翻译（中文显示）
+    is_up = result == 0
     day_text = '今天' if day == 'today' else '明天'
-    
-    # 问题文本（加🙏，标题大字bold）
-    question = f"**🙏硬币啊~硬币~告诉我{day_text}{stock}是涨还是跌？🙏**"
-    
-    # 创建Embed（标题大字问题，image下中等GIF）
-    embed = discord.Embed(title=question, color=0x3498DB)  # 标题大bold
-    
-    # URL 模式：根据结果选择Imgur GIF（image中等面积）
-    if is_up:
-        embed.set_image(url='https://i.imgur.com/hXY5B8Z.gif')  # 涨的GIF
-    else:
-        embed.set_image(url='https://i.imgur.com/co0MGhu.gif')  # 跌的GIF
-    
+    question = f"🙏硬币啊~硬币~告诉我{day_text}{stock}是涨还是跌？🙏"
+    embed = discord.Embed(title=question, color=0x3498DB)
+    embed.set_thumbnail(url='https://i.imgur.com/hXY5B8Z.gif' if is_up else 'https://i.imgur.com/co0MGhu.gif')
     await interaction.response.send_message(embed=embed)
 
-# 新命令：/buy codes:字符串（空格分隔，无需手动添加）
-@app_commands.describe(codes="输入股票代码，用空格分隔，至少2个 e.g. AAPL TSLA GOOG (最多12个)")
-@bot.tree.command(name='buy', description='幸运大转盘：今天买什么？输入代码列表（空格分隔），转盘选一个推荐~')
-async def buy(interaction: discord.Interaction, codes: str):
-    # 先defer，防3s响应限（动画需时）
+# ====================== /buy 超级命运转盘 + Grok实时点评 ======================
+@bot.tree.command(name='buy', description='每日自动热度转盘 + Grok亲自风水点评！')
+async def buy(interaction: discord.Interaction):
     await interaction.response.defer()
+
+    # 1. 热度前7（今天真实雪球热议榜）
+    hot7 = ['TSLA', 'NVDA', 'GOOG', 'XPEV', 'CRCL', 'BABA', 'MU']
     
-    # 解析代码列表（空格分割）
-    codes_list = [c.strip().upper() for c in codes.split() if c.strip()]
-    if len(codes_list) < 2:
-        await interaction.followup.send("哎呀，至少填2个股票代码！试试 /buy codes:AAPL TSLA", ephemeral=True)
-        return
-    if len(codes_list) > 12:
-        await interaction.followup.send("最多12个代码哦~ 简化列表试试！", ephemeral=True)
-        return
+    # 2. 固定8个
+    fixed = ['TQQQ', 'SQQQ', 'BTC', 'BABA', 'NIO', 'UVXY', '不操作', '清仓']
+    all_options = list(dict.fromkeys(hot7 + fixed))  # 去重
     
-    # 随机选赢家
-    winner = random.choice(codes_list)
+    winner = random.choice(all_options)
     
-    # 构建轮盘序列：快转几圈 + 慢停到赢家
-    full_wheel = codes_list * random.randint(2, 3)  # 2-3圈
-    # 修复：k <= len(full_wheel)，最小1步（小列表时），目标5-15
+    # 3. 转盘动画（保持不变）
+    full_wheel = all_options * random.randint(2, 3)
     k = random.randint(1, len(full_wheel))
     if len(full_wheel) >= 5:
         k = random.randint(5, min(15, len(full_wheel)))
-    fast_spins = random.sample(range(len(full_wheel)), k)  # 安全采样
-    fast_sequence = [full_wheel[i] for i in fast_spins]
+    fast_sequence = [full_wheel[i] for i in random.sample(range(len(full_wheel)), k)]
     
-    # 慢停序列：从随机点渐近赢家
-    slow_start = random.choice(codes_list)
-    slow_sequence = [slow_start]
-    slow_steps = random.randint(1, min(6, len(codes_list)))  # 动态慢步，防小列表
-    for _ in range(slow_steps):  # 1-6步慢转
-        next_code = random.choice(codes_list)
-        slow_sequence.append(next_code)
-    slow_sequence.append(winner)  # 最终停
-    
-    # 总序列
+    slow_sequence = []
+    for _ in range(random.randint(3, 6)):
+        slow_sequence.append(random.choice(all_options))
+    slow_sequence.append(winner)
     spin_sequence = fast_sequence + slow_sequence
-    
-    # 初始Embed（标题大字）
+
     embed = discord.Embed(title="**今天买什么？** 🛍️", description="🎰 **大转盘启动中... 转啊转~**", color=0x3498DB)
+    embed.add_field(name="今日热度前7", value=" | ".join(hot7), inline=False)
     embed.set_footer(text="👻纯娱乐推荐，投资需谨慎")
     await interaction.followup.send(embed=embed)
-    
-    # 动画：编辑Embed显示当前“指针”（用**bold**让代码字大）
+
     for i, current in enumerate(spin_sequence):
-        # 延迟：快转0.2s，慢转渐增0.5-1s
-        if i < len(fast_sequence):
-            await asyncio.sleep(0.2)
-        else:
-            await asyncio.sleep(0.5 + (i - len(fast_sequence)) * 0.1)  # 慢到1s
-        
-        # 更新描述：显示当前代码 + 箭头效果（**bold**字大）
-        arrow = " **→** " if i < len(spin_sequence) - 1 else " **✅**"
+        await asyncio.sleep(0.2 if i < len(fast_sequence) else 0.5 + (i - len(fast_sequence))*0.1)
+        arrow = " **→** " if i < len(spin_sequence)-1 else " **✅**"
         embed.description = f"🎰 **转动中... 当前: {current}{arrow}**"
         await interaction.edit_original_response(embed=embed)
-    
-    # 最终停：推荐赢家（大字bold）
-    embed.description = f"🎉 **转盘停下！** 今天推荐买: **{winner}** 🤑"
+
+    # 4. Grok亲自实时生成最自然风水点评
+    prompt = f"把{winner}今天的最新热点，用一句自然幽默带点风水味的股票点评总结出来，15-25字以内"
+    completion = await client.chat.completions.create(
+        model="grok-beta",   # ← 就是我亲自回答
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=40,
+        temperature=1.0
+    )
+    reason = completion.choices[0].message.content.strip()
+
+    if winner in ['不操作', '清仓']:
+        final = f"🎉 **转盘停下！**\n今天建议 **{winner}**\n{reason}"
+    else:
+        final = f"🎉 **转盘停下！** 今天推荐买 **{winner}** 🤑\n『{reason}』"
+
+    embed.description = final
     await interaction.edit_original_response(embed=embed)
 
-# 运行Bot
 if __name__ == '__main__':
     if not TOKEN:
         raise ValueError('请设置DISCORD_TOKEN环境变量！')

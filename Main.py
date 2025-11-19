@@ -7,7 +7,6 @@ from discord import app_commands
 from openai import AsyncOpenAI
 
 # =================配置区域=================
-# DeepSeek 客户端
 client = AsyncOpenAI(
     api_key=os.getenv("DEEPSEEK_API_KEY"),
     base_url="https://api.deepseek.com/v1"
@@ -62,7 +61,6 @@ async def coin(interaction: discord.Interaction, stock: str, day: str):
 async def buy(interaction: discord.Interaction):
     await interaction.response.defer()
     
-    # 1. 获取代码 (DeepSeek 或 兜底)
     try:
         prompt = "根据今天全球股市实时热度和新闻，列出最热门的7只美股或加密货币代码（大写），用逗号分隔，不要解释"
         completion = await client.chat.completions.create(
@@ -78,14 +76,11 @@ async def buy(interaction: discord.Interaction):
     all_options = list(dict.fromkeys(hot7 + fixed))
     winner = random.choice(all_options)
 
-    # 2. 动画
     embed = discord.Embed(title="**今天买什么？** 🛍️", description="🎰 **大转盘启动中...**", color=0x3498DB)
     await interaction.followup.send(embed=embed)
     
-    # 简化的动画逻辑
     await asyncio.sleep(2) 
 
-    # 3. 理由
     prompt_reason = f"用一句简要真实的原因总结今天买{winner}的理由，严格20字以内，无迷信"
     try:
         comp = await client.chat.completions.create(
@@ -99,50 +94,42 @@ async def buy(interaction: discord.Interaction):
     embed.description = final_text
     await interaction.edit_original_response(embed=embed)
 
-# ================= 3. /trend 走势剧本 (带占卜动画) =================
+# ================= 3. /trend 走势剧本 (占卜预测) =================
+# 这里修改了描述文案
 @app_commands.describe(stock="输入你想看剧本的代码（如 TSLA）")
-@bot.tree.command(name='trend', description='AI编造详细走势剧本（新区间+1位小数）')
+@bot.tree.command(name='trend', description='占卜预测今日股票走势')
 async def trend(interaction: discord.Interaction, stock: str):
-    # 这里先defer，防止超时
     await interaction.response.defer()
     stock = stock.upper().strip()
 
-    # --- 1. 发送占卜动画 (紫色) ---
+    # --- 1. 发送占卜动画 ---
     embed_loading = discord.Embed(
         title=f"🔮 正在为 {stock} 占卜中...",
         description="✨ *观星象，测运势，连接宇宙能量...*",
-        color=0x9B59B6 # 神秘紫
+        color=0x9B59B6
     )
-    # 发送第一条消息，并记录下来，稍后编辑它
     message = await interaction.followup.send(embed=embed_loading)
 
-    # --- 2. 后台计算 (同时进行，节省体感时间) ---
-    # 读取概率
+    # --- 2. 后台计算 ---
     p_mild = trend_config['mild']
     p_huge = trend_config['huge']
     
     roll = random.uniform(0, 100)
     
-    # 概率逻辑
     if roll < p_mild:
-        # 温和涨: 0% ~ 10%
         final_percent = random.uniform(0, 10)
     elif roll < (p_mild + p_huge):
-        # 暴涨: 10% ~ 15%
         final_percent = random.uniform(10, 15)
     else:
-        # 下跌: -8% ~ 0%
         final_percent = random.uniform(-8, 0)
 
-    # 格式化: 保留1位小数
     sign = "+" if final_percent >= 0 else ""
     percent_str = f"{sign}{final_percent:.1f}%"
 
-    # DeepSeek 编剧本
     prompt = (
         f"请为股票 {stock} 编造一个今天的走势剧本，风格要像股市解说，带点情绪。"
         f"【硬性要求】：最终收盘必须是 {percent_str}。"
-        f"全文字数严格控制在60字以内。"
+        f"全文字数严格控制在50字以内，越简练越好。"
         f"不要提到具体的百分比数字，只描述过程（开盘、盘中、收盘）。"
     )
 
@@ -151,23 +138,22 @@ async def trend(interaction: discord.Interaction, stock: str):
         completion = await client.chat.completions.create(
             model="deepseek-chat",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=100,
+            max_tokens=80,
             temperature=1.1
         )
         story = completion.choices[0].message.content.strip()
     except Exception as e:
         story = "AI 信号受到宇宙射线干扰..."
 
-    # --- 3. 强制等待 (确保占卜动画展示至少3秒) ---
+    # --- 3. 等待动画 ---
     await asyncio.sleep(3)
 
-    # --- 4. 最终结果展示 ---
+    # --- 4. 结果展示 ---
     color = 0x2ECC71 if final_percent >= 0 else 0xE74C3C 
     emoji = "🚀" if final_percent >= 10 else ("📈" if final_percent >= 0 else "📉")
 
     embed_final = discord.Embed(title=f"{emoji} {stock} 今日预测", color=color)
     
-    # 格式：小标题 + 故事 + 空行 + 超大号收盘价
     embed_final.description = (
         f"### 走势推演 📝\n"
         f"{story}\n\n"
@@ -175,19 +161,22 @@ async def trend(interaction: discord.Interaction, stock: str):
     )
     embed_final.set_footer(text="*本结果纯属AI胡编，切勿当真*")
     
-    # 编辑刚才那条“占卜中”的消息
     await message.edit(embed=embed_final)
 
-# ================= 4. /set_trend 设置概率 (管理员用) =================
+# ================= 4. /set_trend 设置概率 (隐藏命令) =================
+# 增加了 default_permissions(administrator=True)
+# 效果：只有管理员能看到这个命令，普通群员看不见
+@app_commands.default_permissions(administrator=True)
 @app_commands.describe(mild="温和上涨概率(0-10%区间)", huge="暴涨概率(10-15%区间)", drop="下跌概率(-8-0%区间)")
-@bot.tree.command(name='set_trend', description='【管理】设置Trend游戏的概率分布，总和必须100')
+@bot.tree.command(name='set_trend', description='【管理】设置概率分布')
 async def set_trend(interaction: discord.Interaction, mild: int, huge: int, drop: int):
+    # 双重保险：虽然看不见，但如果有人暴力调用，这里再次拦截
     if not interaction.user.guild_permissions.administrator:
-        await interaction.response.send_message("🚫 你没有权限修改概率！", ephemeral=True)
+        await interaction.response.send_message("🚫 你没有权限！", ephemeral=True)
         return
 
     if mild + huge + drop != 100:
-        await interaction.response.send_message(f"🚫 三个数加起来必须等于100！\n你输入的是: {mild+huge+drop}", ephemeral=True)
+        await interaction.response.send_message(f"🚫 总和必须100！当前: {mild+huge+drop}", ephemeral=True)
         return
 
     trend_config['mild'] = mild
@@ -195,12 +184,8 @@ async def set_trend(interaction: discord.Interaction, mild: int, huge: int, drop
     trend_config['drop'] = drop
 
     await interaction.response.send_message(
-        f"✅ **概率已更新！**\n"
-        f"📈 温和上涨 (0~10%): **{mild}%**\n"
-        f"🚀 暴力拉升 (10~15%): **{huge}%**\n"
-        f"📉 下跌回调 (-8~0%): **{drop}%**\n"
-        f"接下来的 /trend 命令将应用此配置。",
-        ephemeral=False
+        f"✅ **配置已更新** (此消息仅管理员可见)",
+        ephemeral=True
     )
 
 if __name__ == '__main__':

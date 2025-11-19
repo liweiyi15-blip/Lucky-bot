@@ -152,7 +152,7 @@ async def trend(interaction: discord.Interaction, stock: str):
     color = 0x2ECC71 if final_percent >= 0 else 0xE74C3C 
     emoji = "🚀" if final_percent >= 10 else ("📈" if final_percent >= 0 else "📉")
 
-    embed_final = discord.Embed(title=f"{stock} 今日走势推演🔮" , color=color)
+    embed_final = discord.Embed(title=f"{stock} 今日走势推演 🪄" , color=color)
     
     embed_final.description = (
         f"{story}\n\n"

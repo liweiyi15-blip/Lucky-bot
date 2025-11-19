@@ -96,7 +96,7 @@ async def buy(interaction: discord.Interaction):
 
 # ================= 3. /trend 走势剧本 (占卜预测) =================
 # 这里修改了描述文案
-@app_commands.describe(stock="输入你想看剧本的代码（如 TSLA）")
+@app_commands.describe(stock="输入你想占卜的代码（如 TSLA）")
 @bot.tree.command(name='trend', description='占卜预测今日股票走势')
 async def trend(interaction: discord.Interaction, stock: str):
     await interaction.response.defer()
@@ -152,12 +152,11 @@ async def trend(interaction: discord.Interaction, stock: str):
     color = 0x2ECC71 if final_percent >= 0 else 0xE74C3C 
     emoji = "🚀" if final_percent >= 10 else ("📈" if final_percent >= 0 else "📉")
 
-    embed_final = discord.Embed(title=f"{emoji} {stock} 今日预测", color=color)
+    embed_final = discord.Embed(title=f"{stock} 今日走势推演🔮" , color=color)
     
     embed_final.description = (
-        f"### 走势推演 📝\n"
         f"{story}\n\n"
-        f"# 最终收盘 {percent_str}"
+        f"# 最终收盘 {percent_str} {emoji}"
     )
     embed_final.set_footer(text="*本结果纯属AI胡编，切勿当真*")
     

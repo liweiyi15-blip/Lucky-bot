@@ -56,12 +56,12 @@ async def coin(interaction: discord.Interaction, stock: str, day: str):
     embed.set_image(url='https://i.imgur.com/hXY5B8Z.gif' if is_up else 'https://i.imgur.com/co0MGhu.gif')
     await interaction.response.send_message(embed=embed)
 
-# ================= 2. /buy 命运转盘 (恢复动画版) =================
+# ================= 2. /buy 命运转盘 (文案优化 + 超大字体) =================
 @bot.tree.command(name='buy', description='每日自动热度转盘 + 实时原因，直接转！')
 async def buy(interaction: discord.Interaction):
     await interaction.response.defer()
     
-    # 1. 获取代码 (DeepSeek 或 兜底)
+    # 1. 获取代码
     try:
         prompt = "根据今天全球股市实时热度和新闻，列出最热门的7只美股或加密货币代码（大写），用逗号分隔，不要解释"
         completion = await client.chat.completions.create(
@@ -76,43 +76,33 @@ async def buy(interaction: discord.Interaction):
     fixed = ['TQQQ', 'SQQQ', 'BTC', 'BABA', 'NIO', 'UVXY', '不操作', '清仓']
     all_options = list(dict.fromkeys(hot7 + fixed))
     
-    # 选出最终赢家
     winner = random.choice(all_options)
 
-    # === 2. 转盘动画逻辑 (恢复) ===
-    # 构造一个转动序列
+    # === 2. 动画逻辑 ===
     full_wheel = all_options * random.randint(2, 3)
     k = random.randint(5, min(15, len(full_wheel)))
-    # 快速阶段
     fast_sequence = [full_wheel[i] for i in random.sample(range(len(full_wheel)), k)]
     
-    # 慢速阶段
     slow_sequence = []
     for _ in range(random.randint(3, 6)):
         slow_sequence.append(random.choice(all_options))
     
-    # 最终序列
     spin_sequence = fast_sequence + slow_sequence
 
-    # 发送初始 Embed
-    embed = discord.Embed(title="**今天买什么？** 🛍️", description="🎰 **大转盘启动中... 转啊转~**", color=0x3498DB)
+    embed = discord.Embed(title="**今天买什么？** 🛍️", description="# 🎰 转盘启动...", color=0x3498DB)
     await interaction.followup.send(embed=embed)
 
-    # 执行转动动画 (修改消息)
     for i, current in enumerate(spin_sequence):
-        # 速度控制：前面快，后面越来越慢
         sleep_time = 0.15 if i < len(fast_sequence) else 0.4 + (i - len(fast_sequence)) * 0.1
         await asyncio.sleep(sleep_time)
         
-        arrow = " **→** "
-        embed.description = f"### 🎰 **转动中... 当前: {current}{arrow}** ###"
-        # 实时编辑消息实现动画效果
+        # 使用一级标题 # 实现最大字体
+        embed.description = f"# 🎰 当前: {current}..."
         await interaction.edit_original_response(embed=embed)
 
-    # 停顿一下增加悬念
     await asyncio.sleep(0.5)
 
-    # === 3. 生成理由 & 最终结果 ===
+    # === 3. 生成理由 ===
     prompt_reason = f"用一句简要真实的原因总结今天买{winner}的理由，严格20字以内，无迷信"
     try:
         comp = await client.chat.completions.create(
@@ -120,9 +110,19 @@ async def buy(interaction: discord.Interaction):
         )
         reason = comp.choices[0].message.content.strip()
     except:
-        reason = "AI 暂时掉线，但直觉告诉你买它！"
+        reason = "AI 暂时掉线，但直觉告诉你就是它！"
 
-    final_text = f"转盘停下！🎉\n### 今天推荐 <**{winner}**> ###\n{reason}"
+    # === 4. 最终结果 (区分文案 + 最大字体) ===
+    if winner in ['不操作', '清仓']:
+        # 特殊操作，不加“买”字
+        action_text = f"今天建议 <{winner}>"
+    else:
+        # 正常股票，加“买”字
+        action_text = f"今天推荐买 <{winner}>"
+
+    # 使用 # 让结果最大化
+    final_text = f"转盘停下！🎉\n# {action_text}\n{reason}"
+    
     embed.description = final_text
     embed.set_footer(text="")
     await interaction.edit_original_response(embed=embed)
@@ -134,7 +134,7 @@ async def trend(interaction: discord.Interaction, stock: str):
     await interaction.response.defer()
     stock = stock.upper().strip()
 
-    # --- 1. 发送占卜动画 (紫色) ---
+    # --- 1. 发送占卜动画 ---
     embed_loading = discord.Embed(
         title=f"🔮 正在为 {stock} 占卜中...",
         description="✨ *观星象，测运势，连接宇宙能量...*",
@@ -158,7 +158,6 @@ async def trend(interaction: discord.Interaction, stock: str):
     sign = "+" if final_percent >= 0 else ""
     percent_str = f"{sign}{final_percent:.1f}%"
 
-    # 严格限制50字
     prompt = (
         f"请为股票 {stock} 编造一个今天的走势剧本，风格要像股市解说，带点情绪。"
         f"【硬性要求】：最终收盘必须是 {percent_str}。"
@@ -178,7 +177,7 @@ async def trend(interaction: discord.Interaction, stock: str):
     except Exception as e:
         story = "AI 信号受到宇宙射线干扰..."
 
-    # --- 3. 强制等待3秒 (让占卜飞一会儿) ---
+    # --- 3. 等待3秒 ---
     await asyncio.sleep(3)
 
     # --- 4. 结果变身 ---

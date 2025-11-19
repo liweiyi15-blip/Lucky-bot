@@ -56,7 +56,7 @@ async def coin(interaction: discord.Interaction, stock: str, day: str):
     embed.set_image(url='https://i.imgur.com/hXY5B8Z.gif' if is_up else 'https://i.imgur.com/co0MGhu.gif')
     await interaction.response.send_message(embed=embed)
 
-# ================= 2. /buy 命运转盘 (文案优化 + 超大字体) =================
+# ================= 2. /buy 命运转盘 (箭头动画版) =================
 @bot.tree.command(name='buy', description='每日自动热度转盘 + 实时原因，直接转！')
 async def buy(interaction: discord.Interaction):
     await interaction.response.defer()
@@ -89,15 +89,15 @@ async def buy(interaction: discord.Interaction):
     
     spin_sequence = fast_sequence + slow_sequence
 
-    embed = discord.Embed(title="**今天买什么？** 🛍️", description="# 🎰 转盘启动...", color=0x3498DB)
+    embed = discord.Embed(title="**今天买什么？** 🛍️", description="# 🎰 转盘启动 ➡️", color=0x3498DB)
     await interaction.followup.send(embed=embed)
 
     for i, current in enumerate(spin_sequence):
         sleep_time = 0.15 if i < len(fast_sequence) else 0.4 + (i - len(fast_sequence)) * 0.1
         await asyncio.sleep(sleep_time)
         
-        # 使用一级标题 # 实现最大字体
-        embed.description = f"# 🎰 当前: {current}..."
+        # === 修改处：使用右箭头 ➡️ 替代省略号 ===
+        embed.description = f"# 🎰 当前: {current} ➡️"
         await interaction.edit_original_response(embed=embed)
 
     await asyncio.sleep(0.5)
@@ -112,12 +112,10 @@ async def buy(interaction: discord.Interaction):
     except:
         reason = "AI 暂时掉线，但直觉告诉你就是它！"
 
-    # === 4. 最终结果 (区分文案 + 最大字体) ===
+    # === 4. 最终结果 ===
     if winner in ['不操作', '清仓']:
-        # 特殊操作，不加“买”字
         action_text = f"今天建议 <{winner}>"
     else:
-        # 正常股票，加“买”字
         action_text = f"今天推荐买 <{winner}>"
 
     # 使用 # 让结果最大化

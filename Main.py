@@ -56,7 +56,7 @@ async def coin(interaction: discord.Interaction, stock: str, day: str):
     embed.set_image(url='https://i.imgur.com/hXY5B8Z.gif' if is_up else 'https://i.imgur.com/co0MGhu.gif')
     await interaction.response.send_message(embed=embed)
 
-# ================= 2. /buy 命运转盘 (文本箭头版) =================
+# ================= 2. /buy 命运转盘 (箭头在前 + 脚注版) =================
 @bot.tree.command(name='buy', description='每日自动热度转盘 + 实时原因，直接转！')
 async def buy(interaction: discord.Interaction):
     await interaction.response.defer()
@@ -89,16 +89,17 @@ async def buy(interaction: discord.Interaction):
     
     spin_sequence = fast_sequence + slow_sequence
 
-    # === 修改处：使用文本箭头 → ===
-    embed = discord.Embed(title="**今天买什么？** 🛍️", description="# 🎰 转盘启动 →", color=0x3498DB)
+    # 初始状态：添加临时脚注
+    embed = discord.Embed(title="**今天买什么？** 🛍️", description="# 🎰 转盘启动...", color=0x3498DB)
+    embed.set_footer(text="纯娱乐推荐，投资需谨慎👻")  # <--- 添加脚注
     await interaction.followup.send(embed=embed)
 
     for i, current in enumerate(spin_sequence):
         sleep_time = 0.15 if i < len(fast_sequence) else 0.4 + (i - len(fast_sequence)) * 0.1
         await asyncio.sleep(sleep_time)
         
-        # === 修改处：使用文本箭头 → ===
-        embed.description = f"# 🎰 当前: {current} →"
+        # === 修改处：箭头放在代码前面 ===
+        embed.description = f"# 🎰 当前: → {current}"
         await interaction.edit_original_response(embed=embed)
 
     await asyncio.sleep(0.5)
@@ -119,11 +120,11 @@ async def buy(interaction: discord.Interaction):
     else:
         action_text = f"今天推荐买 <{winner}>"
 
-    # 使用 # 让结果最大化
     final_text = f"转盘停下！🎉\n# {action_text}\n{reason}"
     
     embed.description = final_text
-    embed.set_footer(text="")
+    # === 结果出炉：清空脚注 ===
+    embed.set_footer(text="") 
     await interaction.edit_original_response(embed=embed)
 
 # ================= 3. /trend 走势剧本 (占卜预测版) =================

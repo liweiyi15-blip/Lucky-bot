@@ -13,14 +13,40 @@ client = AsyncOpenAI(
 )
 
 # 全局概率配置 (默认值)
-# mild: 0% ~ 10%
-# huge: 10% ~ 15%
-# drop: -8% ~ 0%
 trend_config = {
     "mild": 60,   # 60% 概率
     "huge": 35,   # 35% 概率
     "drop": 5     # 5% 概率
 }
+
+# ================= GIF 配置区域 =================
+BUY_GIF_LIST = [
+    "https://i.imgur.com/tgbYTq0.gif",
+    "https://i.imgur.com/vzcjv2g.gif",
+    "https://i.imgur.com/yToXyEY.gif",
+    "https://i.imgur.com/Wueu8CR.gif",
+    "https://i.imgur.com/BZfgHTg.gif",
+    "https://i.imgur.com/buVio4e.gif",
+    "https://i.imgur.com/LBAM18M.gif",
+    "https://i.imgur.com/zCQU0HS.gif",
+    "https://i.imgur.com/ZTUOzPZ.gif",
+    "https://i.imgur.com/oD4N3Pv.gif",
+    "https://i.imgur.com/waPqfIx.gif",
+    "https://i.imgur.com/v1UAYPy.gif",
+    "https://i.imgur.com/tD9epjb.gif",
+    "https://i.imgur.com/gZTtmT5.gif",
+    "https://i.imgur.com/KjTuHLp.gif",
+    "https://i.imgur.com/ieW5lMt.gif",
+    "https://i.imgur.com/3cTsE2n.gif",
+    "https://i.imgur.com/WsrReSU.gif",
+    "https://i.imgur.com/JV6EqAd.gif",
+    "https://i.imgur.com/PclY7hg.gif",
+    "https://i.imgur.com/AWKYOtB.gif",
+    "https://i.imgur.com/ThV3XZB.gif",
+    "https://i.imgur.com/eMjbZ2c.gif",
+    "https://i.imgur.com/GyZVe2r.gif",
+    "https://i.imgur.com/f2rX4rl.gif"
+]
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -56,12 +82,13 @@ async def coin(interaction: discord.Interaction, stock: str, day: str):
     embed.set_image(url='https://i.imgur.com/hXY5B8Z.gif' if is_up else 'https://i.imgur.com/co0MGhu.gif')
     await interaction.response.send_message(embed=embed)
 
-# ================= 2. /buy 命运转盘 (箭头在前 + 脚注版) =================
-@bot.tree.command(name='buy', description='每日自动热度转盘 + 实时原因，直接转！')
+# ================= 2. /buy 命运转盘 (随机GIF版) =================
+@bot.tree.command(name='buy', description='每日自动热度推荐 + 命运GIF！')
 async def buy(interaction: discord.Interaction):
+    # 1. 立即回复以避免超时
     await interaction.response.defer()
     
-    # 1. 获取代码
+    # 2. 获取代码 (DeepSeek)
     try:
         prompt = "根据今天全球股市实时热度和新闻，列出最热门的7只美股或加密货币代码（大写），用逗号分隔，不要解释"
         completion = await client.chat.completions.create(
@@ -76,35 +103,10 @@ async def buy(interaction: discord.Interaction):
     fixed = ['TQQQ', 'SQQQ', 'BTC', 'BABA', 'NIO', 'UVXY', '不操作', '清仓']
     all_options = list(dict.fromkeys(hot7 + fixed))
     
+    # 3. 选出赢家
     winner = random.choice(all_options)
 
-    # === 2. 动画逻辑 ===
-    full_wheel = all_options * random.randint(2, 3)
-    k = random.randint(5, min(15, len(full_wheel)))
-    fast_sequence = [full_wheel[i] for i in random.sample(range(len(full_wheel)), k)]
-    
-    slow_sequence = []
-    for _ in range(random.randint(3, 6)):
-        slow_sequence.append(random.choice(all_options))
-    
-    spin_sequence = fast_sequence + slow_sequence
-
-    # 初始状态：添加临时脚注
-    embed = discord.Embed(title="**今天买什么？** 🛍️", description="# 🎰 转盘启动...", color=0x3498DB)
-    embed.set_footer(text="纯娱乐推荐，投资需谨慎👻")  # <--- 添加脚注
-    await interaction.followup.send(embed=embed)
-
-    for i, current in enumerate(spin_sequence):
-        sleep_time = 0.15 if i < len(fast_sequence) else 0.4 + (i - len(fast_sequence)) * 0.1
-        await asyncio.sleep(sleep_time)
-        
-        # === 修改处：箭头放在代码前面 ===
-        embed.description = f"# 🎰 当前: → {current}"
-        await interaction.edit_original_response(embed=embed)
-
-    await asyncio.sleep(0.5)
-
-    # === 3. 生成理由 ===
+    # 4. 生成理由 (DeepSeek)
     prompt_reason = f"用一句简要真实的原因总结今天买{winner}的理由，严格20字以内，无迷信"
     try:
         comp = await client.chat.completions.create(
@@ -114,18 +116,29 @@ async def buy(interaction: discord.Interaction):
     except:
         reason = "AI 暂时掉线，但直觉告诉你就是它！"
 
-    # === 4. 最终结果 ===
+    # 5. 准备结果文本
     if winner in ['不操作', '清仓']:
         action_text = f"今天建议 <{winner}>"
+        color = 0x95A5A6 # 灰色
     else:
         action_text = f"今天推荐买 <{winner}>"
+        color = 0xE74C3C # 红色
 
-    final_text = f"转盘停下！🎉\n# {action_text}\n{reason}"
+    final_text = f"🎉 **命运已选定！**\n# {action_text}\n> {reason}"
+
+    # 6. 随机选择一个GIF
+    if BUY_GIF_LIST:
+        gif_url = random.choice(BUY_GIF_LIST)
+    else:
+        # 备用，防止列表为空
+        gif_url = "https://i.imgur.com/hXY5B8Z.gif"
+
+    # 7. 构建 Embed 并发送
+    embed = discord.Embed(description=final_text, color=color)
+    embed.set_image(url=gif_url)
+    embed.set_footer(text="纯娱乐推荐，投资需谨慎👻")
     
-    embed.description = final_text
-    # === 结果出炉：清空脚注 ===
-    embed.set_footer(text="") 
-    await interaction.edit_original_response(embed=embed)
+    await interaction.followup.send(embed=embed)
 
 # ================= 3. /trend 走势剧本 (占卜预测版) =================
 @app_commands.describe(stock="输入你想看剧本的代码（如 TSLA）")

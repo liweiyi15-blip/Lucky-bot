@@ -20,32 +20,33 @@ trend_config = {
 }
 
 # ================= GIF 配置区域 =================
+# 已替换为你最新提供的25个链接
 BUY_GIF_LIST = [
-    "https://i.imgur.com/tgbYTq0.gif",
-    "https://i.imgur.com/vzcjv2g.gif",
-    "https://i.imgur.com/yToXyEY.gif",
-    "https://i.imgur.com/Wueu8CR.gif",
-    "https://i.imgur.com/BZfgHTg.gif",
-    "https://i.imgur.com/buVio4e.gif",
-    "https://i.imgur.com/LBAM18M.gif",
-    "https://i.imgur.com/zCQU0HS.gif",
-    "https://i.imgur.com/ZTUOzPZ.gif",
-    "https://i.imgur.com/oD4N3Pv.gif",
-    "https://i.imgur.com/waPqfIx.gif",
-    "https://i.imgur.com/v1UAYPy.gif",
-    "https://i.imgur.com/tD9epjb.gif",
-    "https://i.imgur.com/gZTtmT5.gif",
-    "https://i.imgur.com/KjTuHLp.gif",
-    "https://i.imgur.com/ieW5lMt.gif",
-    "https://i.imgur.com/3cTsE2n.gif",
-    "https://i.imgur.com/WsrReSU.gif",
-    "https://i.imgur.com/JV6EqAd.gif",
-    "https://i.imgur.com/PclY7hg.gif",
-    "https://i.imgur.com/AWKYOtB.gif",
-    "https://i.imgur.com/ThV3XZB.gif",
-    "https://i.imgur.com/eMjbZ2c.gif",
-    "https://i.imgur.com/GyZVe2r.gif",
-    "https://i.imgur.com/f2rX4rl.gif"
+    "https://i.imgur.com/1JK7LqT.gif",
+    "https://i.imgur.com/4RZnQvD.gif",
+    "https://i.imgur.com/6Ll2d2E.gif",
+    "https://i.imgur.com/49LNAPf.gif",
+    "https://i.imgur.com/A4xNn8d.gif",
+    "https://i.imgur.com/BAamjTj.gif",
+    "https://i.imgur.com/Da3176z.gif",
+    "https://i.imgur.com/HyX4Psd.gif",
+    "https://i.imgur.com/LZnGjF5.gif",
+    "https://i.imgur.com/NHK1w7T.gif",
+    "https://i.imgur.com/Nx0L7Dp.gif",
+    "https://i.imgur.com/OplCEyP.gif",
+    "https://i.imgur.com/OpzCvpf.gif",
+    "https://i.imgur.com/QUOP8At.gif",
+    "https://i.imgur.com/X7uguhk.gif",
+    "https://i.imgur.com/XC9LMhr.gif",
+    "https://i.imgur.com/fZAHQM5.gif",
+    "https://i.imgur.com/kLzEc0L.gif",
+    "https://i.imgur.com/joVoooV.gif",
+    "https://i.imgur.com/lfodyai.gif",
+    "https://i.imgur.com/lsQB4IE.gif",
+    "https://i.imgur.com/rO0gQbq.gif",
+    "https://i.imgur.com/reopl9v.gif",
+    "https://i.imgur.com/vkP96CZ.gif",
+    "https://i.imgur.com/weOKobo.gif"
 ]
 
 intents = discord.Intents.default()
@@ -82,63 +83,26 @@ async def coin(interaction: discord.Interaction, stock: str, day: str):
     embed.set_image(url='https://i.imgur.com/hXY5B8Z.gif' if is_up else 'https://i.imgur.com/co0MGhu.gif')
     await interaction.response.send_message(embed=embed)
 
-# ================= 2. /buy 命运转盘 (随机GIF版) =================
-@bot.tree.command(name='buy', description='每日自动热度推荐 + 命运GIF！')
+# ================= 2. /buy 命运转盘 (纯净版) =================
+@bot.tree.command(name='buy', description='转盘会告诉你买什么。。。')
 async def buy(interaction: discord.Interaction):
-    # 1. 立即回复以避免超时
-    await interaction.response.defer()
-    
-    # 2. 获取代码 (DeepSeek)
-    try:
-        prompt = "根据今天全球股市实时热度和新闻，列出最热门的7只美股或加密货币代码（大写），用逗号分隔，不要解释"
-        completion = await client.chat.completions.create(
-            model="deepseek-chat", messages=[{"role": "user", "content": prompt}], max_tokens=50, temperature=0.5
-        )
-        hot_str = completion.choices[0].message.content.strip()
-        hot7 = [code.strip() for code in hot_str.split(',') if code.strip()]
-        if len(hot7) < 7: raise Exception("不足7只")
-    except:
-        hot7 = ['AAPL', 'MSFT', 'GOOG', 'AMZN', 'META', 'NVDA', 'TSLA']
-
-    fixed = ['TQQQ', 'SQQQ', 'BTC', 'BABA', 'NIO', 'UVXY', '不操作', '清仓']
-    all_options = list(dict.fromkeys(hot7 + fixed))
-    
-    # 3. 选出赢家
-    winner = random.choice(all_options)
-
-    # 4. 生成理由 (DeepSeek)
-    prompt_reason = f"用一句简要真实的原因总结今天买{winner}的理由，严格20字以内，无迷信"
-    try:
-        comp = await client.chat.completions.create(
-            model="deepseek-chat", messages=[{"role": "user", "content": prompt_reason}], max_tokens=40
-        )
-        reason = comp.choices[0].message.content.strip()
-    except:
-        reason = "AI 暂时掉线，但直觉告诉你就是它！"
-
-    # 5. 准备结果文本
-    if winner in ['不操作', '清仓']:
-        action_text = f"今天建议 <{winner}>"
-        color = 0x95A5A6 # 灰色
-    else:
-        action_text = f"今天推荐买 <{winner}>"
-        color = 0xE74C3C # 红色
-
-    final_text = f"🎉 **命运已选定！**\n# {action_text}\n> {reason}"
-
-    # 6. 随机选择一个GIF
+    # 随机选择一个GIF
     if BUY_GIF_LIST:
         gif_url = random.choice(BUY_GIF_LIST)
     else:
-        # 备用，防止列表为空
-        gif_url = "https://i.imgur.com/hXY5B8Z.gif"
+        # 防止列表为空的备用图
+        gif_url = "https://i.imgur.com/1JK7LqT.gif"
 
-    # 7. 构建 Embed 并发送
-    embed = discord.Embed(description=final_text, color=color)
+    # 构建 Embed
+    embed = discord.Embed(
+        title="决定命运的转盘~转起来吧~🎰🎰",
+        color=0xE74C3C 
+    )
     embed.set_image(url=gif_url)
     embed.set_footer(text="纯娱乐推荐，投资需谨慎👻")
     
-    await interaction.followup.send(embed=embed)
+    # 直接发送
+    await interaction.response.send_message(embed=embed)
 
 # ================= 3. /trend 走势剧本 (占卜预测版) =================
 @app_commands.describe(stock="输入你想看剧本的代码（如 TSLA）")
